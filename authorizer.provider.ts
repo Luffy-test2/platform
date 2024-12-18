@@ -3,12 +3,21 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.createAuthorizerProviders = void 0;
 const auth_1 = require("../auth");
 const decorators_1 = require("../decorators");
+const core_1 = require("@nestjs/core"); // Ajout de l'import pour ModuleRef
 function createServiceProvider(DTOClass) {
     const token = (0, auth_1.getAuthorizerToken)(DTOClass);
     const authorizer = (0, decorators_1.getAuthorizer)(DTOClass);
+
     if (!authorizer) {
-        // create default authorizer in case any relations have an authorizers
-        return { provide: token, useClass: (0, auth_1.createDefaultAuthorizer)(DTOClass, { authorize: () => ({}) }) };
+        // Utilisation explicite de ModuleRef via useFactory
+        return {
+            provide: token,
+            inject: [core_1.ModuleRef],
+            useFactory: (moduleRef) => {
+                const DefaultAuthorizer = (0, auth_1.createDefaultAuthorizer)(DTOClass, { authorize: () => ({}) });
+                return new DefaultAuthorizer(moduleRef);
+            },
+        };
     }
     return { provide: token, useClass: authorizer };
 }
